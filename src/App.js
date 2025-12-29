@@ -1,0 +1,538 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { Search, Calendar, DollarSign, Award, Plus, Filter, TrendingUp, X } from 'lucide-react';
+
+// Initialize Supabase
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_ANON_KEY
+);
+
+const TrophyDash = () => {
+  const [awards, setAwards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState('home');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [filterPrestige, setFilterPrestige] = useState('All');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    deadline: '',
+    prestige: 'Medium',
+    price: '',
+    description: '',
+    website: '',
+    location: ''
+  });
+
+  const categories = ['All', 'Advertising & Marketing', 'Public Relations', 'Marketing', 'Content Marketing', 'Digital', 'Corporate Comms', 'Social Media'];
+  const prestigeLevels = ['All', 'High', 'Medium', 'Low'];
+
+  // Fetch awards from Supabase
+  useEffect(() => {
+    fetchAwards();
+  }, []);
+
+  const fetchAwards = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('awards')
+        .select('*')
+        .order('deadline', { ascending: true });
+      
+      if (error) throw error;
+      setAwards(data || []);
+    } catch (error) {
+      console.error('Error fetching awards:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDaysUntil = (deadline) => {
+    const today = new Date();
+    const deadlineDate = new Date(deadline);
+    const diffTime = deadlineDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const imminentAwards = useMemo(() => {
+    return awards
+      .filter(award => getDaysUntil(award.deadline) <= 30 && getDaysUntil(award.deadline) > 0)
+      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+      .slice(0, 3);
+  }, [awards]);
+
+  const filteredAwards = useMemo(() => {
+    return awards.filter(award => {
+      const matchesSearch = award.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          award.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = filterCategory === 'All' || award.category === filterCategory;
+      const matchesPrestige = filterPrestige === 'All' || award.prestige === filterPrestige;
+      return matchesSearch && matchesCategory && matchesPrestige;
+    });
+  }, [awards, searchTerm, filterCategory, filterPrestige]);
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.category || !formData.deadline || !formData.price || 
+        !formData.description || !formData.website || !formData.location) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('awards')
+        .insert([formData])
+        .select();
+      
+      if (error) throw error;
+      
+      // Add to local state
+      setAwards([...awards, ...data]);
+      
+      // Reset form
+      setFormData({
+        name: '',
+        category: '',
+        deadline: '',
+        prestige: 'Medium',
+        price: '',
+        description: '',
+        website: '',
+        location: ''
+      });
+      
+      alert('Award submitted successfully!');
+      setView('database');
+    } catch (error) {
+      console.error('Error submitting award:', error);
+      alert('Error submitting award. Please try again.');
+    }
+  };
+
+  const PrestigeBadge = ({ level }) => {
+    const colors = {
+      High: 'bg-amber-100 text-amber-800 border-amber-300',
+      Medium: 'bg-blue-100 text-blue-800 border-blue-300',
+      Low: 'bg-gray-100 text-gray-800 border-gray-300'
+    };
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${colors[level]}`}>
+        {level} Prestige
+      </span>
+    );
+  };
+
+  const DeadlineBadge = ({ deadline }) => {
+    const days = getDaysUntil(deadline);
+    const isUrgent = days <= 7;
+    const isImminent = days <= 30;
+    
+    return (
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+        isUrgent ? 'bg-red-100 text-red-800 border border-red-300' :
+        isImminent ? 'bg-orange-100 text-orange-800 border border-orange-300' :
+        'bg-green-100 text-green-800 border border-green-300'
+      }`}>
+        {days > 0 ? `${days} days left` : 'Closed'}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Award className="mx-auto text-blue-600 animate-pulse mb-4" size={64} />
+          <p className="text-gray-600 text-lg">Loading awards...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'home') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Award className="text-blue-600" size={32} />
+              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+            </div>
+            <nav className="flex gap-4">
+              <button onClick={() => setView('home')} className="text-blue-600 font-medium">Home</button>
+              <button onClick={() => setView('database')} className="text-gray-600 hover:text-gray-900">Browse Awards</button>
+              <button onClick={() => setView('submit')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <Plus size={18} />
+                Submit Award
+              </button>
+            </nav>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-6 py-16 text-center">
+          <h2 className="text-5xl font-bold text-gray-900 mb-4">
+            Every Award. One Place. <span className="text-blue-600">No More FOMO.</span>
+          </h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            The searchable database for comms professionals. Find awards, track deadlines, and never miss your shot at glory.
+          </p>
+          
+          <div className="max-w-2xl mx-auto mb-12">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search awards by name or keyword..."
+                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none text-lg"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setView('database');
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-16">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-3xl font-bold text-blue-600 mb-2">{awards.length}</div>
+              <div className="text-gray-600">Active Awards</div>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-3xl font-bold text-purple-600 mb-2">{imminentAwards.length}</div>
+              <div className="text-gray-600">Closing Soon</div>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="text-3xl font-bold text-amber-600 mb-2">{categories.length - 1}</div>
+              <div className="text-gray-600">Categories</div>
+            </div>
+          </div>
+        </div>
+
+        {imminentAwards.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 pb-16">
+            <div className="flex items-center gap-3 mb-6">
+              <TrendingUp className="text-red-500" size={28} />
+              <h3 className="text-3xl font-bold text-gray-900">Closing Soon ⚡</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {imminentAwards.map(award => (
+                <div key={award.id} className="bg-white rounded-xl p-6 shadow-md border-2 border-red-200 hover:shadow-lg transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <DeadlineBadge deadline={award.deadline} />
+                    <PrestigeBadge level={award.prestige} />
+                  </div>
+                  <h4 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h4>
+                  <p className="text-sm text-gray-600 mb-3">{award.description.slice(0, 100)}...</p>
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+                    <span className="flex items-center gap-1">
+                      <Calendar size={14} />
+                      {new Date(award.deadline).toLocaleDateString('en-GB')}
+                    </span>
+                    <span className="flex items-center gap-1 font-medium">
+                      <DollarSign size={14} />
+                      {award.price}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500">{award.category}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <h3 className="text-3xl font-bold mb-4">Run an Awards Programme?</h3>
+            <p className="text-xl mb-8 text-blue-100">Get your awards in front of thousands of comms professionals. It's free to list.</p>
+            <button 
+              onClick={() => setView('submit')}
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
+            >
+              Submit Your Award →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'database') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Award className="text-blue-600" size={32} />
+              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+            </div>
+            <nav className="flex gap-4">
+              <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
+              <button onClick={() => setView('database')} className="text-blue-600 font-medium">Browse Awards</button>
+              <button onClick={() => setView('submit')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <Plus size={18} />
+                Submit Award
+              </button>
+            </nav>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-8">
+            <div className="flex gap-4 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search awards..."
+                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Filter size={18} />
+                Filters
+              </button>
+            </div>
+
+            {showFilters && (
+              <div className="bg-white p-4 rounded-lg border border-gray-200 flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prestige</label>
+                  <select
+                    value={filterPrestige}
+                    onChange={(e) => setFilterPrestige(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    {prestigeLevels.map(level => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setFilterCategory('All');
+                      setFilterPrestige('All');
+                      setSearchTerm('');
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                  >
+                    <X size={16} />
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mb-4 text-gray-600">
+            Showing {filteredAwards.length} award{filteredAwards.length !== 1 ? 's' : ''}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAwards.map(award => (
+              <div key={award.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-3">
+                  <DeadlineBadge deadline={award.deadline} />
+                  <PrestigeBadge level={award.prestige} />
+                </div>
+                <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
+                <p className="text-sm text-gray-600 mb-4">{award.description}</p>
+                <div className="space-y-2 text-sm text-gray-500 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} />
+                    Deadline: {new Date(award.deadline).toLocaleDateString('en-GB')}
+                  </div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <DollarSign size={16} />
+                    Entry fee: {award.price}
+                  </div>
+                </div>
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="text-xs text-gray-500 mb-2">
+                    <strong>Category:</strong> {award.category}
+                  </div>
+                  <div className="text-xs text-gray-500 mb-2">
+                    <strong>Location:</strong> {award.location}
+                  </div>
+                  {award.website && (
+                    <a
+                      href={`https://${award.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      Visit website →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredAwards.length === 0 && (
+            <div className="text-center py-16">
+              <Award className="mx-auto text-gray-300 mb-4" size={64} />
+              <p className="text-gray-500 text-lg">No awards found matching your criteria.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'submit') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Award className="text-blue-600" size={32} />
+              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+            </div>
+            <nav className="flex gap-4">
+              <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
+              <button onClick={() => setView('database')} className="text-gray-600 hover:text-gray-900">Browse Awards</button>
+              <button onClick={() => setView('submit')} className="text-blue-600 font-medium">Submit Award</button>
+            </nav>
+          </div>
+        </header>
+
+        <div className="max-w-3xl mx-auto px-6 py-12">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Submit Your Award</h2>
+            <p className="text-gray-600 mb-8">List your awards programme and reach thousands of comms professionals. It's free!</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Award Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g. The Drum Awards for Marketing"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">Select a category</option>
+                  {categories.slice(1).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Entry Deadline *</label>
+                  <input
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({...formData, deadline: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Entry Fee *</label>
+                  <input
+                    type="text"
+                    value={formData.price}
+                    onChange={(e) => setFormData({...formData, price: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g. £295"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Prestige Level *</label>
+                <select
+                  value={formData.prestige}
+                  onChange={(e) => setFormData({...formData, prestige: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="High">High - Internationally recognized</option>
+                  <option value="Medium">Medium - Industry respected</option>
+                  <option value="Low">Low - Regional or emerging</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="Describe your awards programme, what makes it unique, and who should enter..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Website *</label>
+                <input
+                  type="text"
+                  value={formData.website}
+                  onChange={(e) => setFormData({...formData, website: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g. thedrum.com/awards"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData({...formData, location: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g. London, UK or Virtual"
+                />
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                className="w-full bg-blue-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors"
+              >
+                Submit Award
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+
+export default TrophyDash;
