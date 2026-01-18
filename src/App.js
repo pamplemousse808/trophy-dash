@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Search, Calendar, DollarSign, Award, Plus, Filter, TrendingUp, X } from 'lucide-react';
+import { Search, Calendar, DollarSign, Award, Plus, Filter, TrendingUp, X, Tag } from 'lucide-react';
 
 // Initialize Supabase
 const supabase = createClient(
@@ -14,21 +14,27 @@ const TrophyDash = () => {
   const [view, setView] = useState('home');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [filterIndustry, setFilterIndustry] = useState('All');
   const [filterPrestige, setFilterPrestige] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    industry: '',
     deadline: '',
     prestige: 'Medium',
     price: '',
     description: '',
     website: '',
-    location: ''
+    location: '',
+    available_categories: ''
   });
 
   const categories = ['All', 'Advertising & Marketing', 'Public Relations', 'Marketing', 'Content Marketing', 'Digital', 'Corporate Comms', 'Social Media'];
+  
+  const industries = ['All', 'General/Cross-Industry', 'Fintech', 'Legal/Law', 'HR/Recruitment', 'Healthcare', 'Technology/SaaS', 'Real Estate', 'Retail', 'Automotive', 'Energy', 'Financial Services', 'Education', 'Non-Profit', 'Government'];
+  
   const prestigeLevels = ['All', 'High', 'Medium', 'Low'];
 
   // Fetch awards from Supabase
@@ -72,13 +78,14 @@ const TrophyDash = () => {
       const matchesSearch = award.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           award.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = filterCategory === 'All' || award.category === filterCategory;
+      const matchesIndustry = filterIndustry === 'All' || award.industry === filterIndustry;
       const matchesPrestige = filterPrestige === 'All' || award.prestige === filterPrestige;
-      return matchesSearch && matchesCategory && matchesPrestige;
+      return matchesSearch && matchesCategory && matchesIndustry && matchesPrestige;
     });
-  }, [awards, searchTerm, filterCategory, filterPrestige]);
+  }, [awards, searchTerm, filterCategory, filterIndustry, filterPrestige]);
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.category || !formData.deadline || !formData.price || 
+    if (!formData.name || !formData.category || !formData.industry || !formData.deadline || !formData.price || 
         !formData.description || !formData.website || !formData.location) {
       alert('Please fill in all required fields');
       return;
@@ -99,12 +106,14 @@ const TrophyDash = () => {
       setFormData({
         name: '',
         category: '',
+        industry: '',
         deadline: '',
         prestige: 'Medium',
         price: '',
         description: '',
         website: '',
-        location: ''
+        location: '',
+        available_categories: ''
       });
       
       alert('Award submitted successfully!');
@@ -209,8 +218,8 @@ const TrophyDash = () => {
               <div className="text-gray-600">Closing Soon</div>
             </div>
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-3xl font-bold text-amber-600 mb-2">{categories.length - 1}</div>
-              <div className="text-gray-600">Categories</div>
+              <div className="text-3xl font-bold text-amber-600 mb-2">{industries.length - 1}</div>
+              <div className="text-gray-600">Industries</div>
             </div>
           </div>
         </div>
@@ -240,7 +249,11 @@ const TrophyDash = () => {
                       {award.price}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500">{award.category}</div>
+                  {award.industry && (
+                    <div className="text-xs text-blue-600 font-medium mt-2">
+                      {award.industry}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -306,8 +319,8 @@ const TrophyDash = () => {
             </div>
 
             {showFilters && (
-              <div className="bg-white p-4 rounded-lg border border-gray-200 flex gap-4">
-                <div className="flex-1">
+              <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-3 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                   <select
                     value={filterCategory}
@@ -319,7 +332,19 @@ const TrophyDash = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex-1">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                  <select
+                    value={filterIndustry}
+                    onChange={(e) => setFilterIndustry(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    {industries.map(ind => (
+                      <option key={ind} value={ind}>{ind}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Prestige</label>
                   <select
                     value={filterPrestige}
@@ -331,17 +356,18 @@ const TrophyDash = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex items-end">
+                <div className="col-span-3 flex justify-end">
                   <button
                     onClick={() => {
                       setFilterCategory('All');
+                      setFilterIndustry('All');
                       setFilterPrestige('All');
                       setSearchTerm('');
                     }}
                     className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
                   >
                     <X size={16} />
-                    Clear
+                    Clear All
                   </button>
                 </div>
               </div>
@@ -360,6 +386,12 @@ const TrophyDash = () => {
                   <PrestigeBadge level={award.prestige} />
                 </div>
                 <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
+                {award.industry && (
+                  <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
+                    <Tag size={12} />
+                    {award.industry}
+                  </div>
+                )}
                 <p className="text-sm text-gray-600 mb-4">{award.description}</p>
                 <div className="space-y-2 text-sm text-gray-500 mb-4">
                   <div className="flex items-center gap-2">
@@ -371,6 +403,14 @@ const TrophyDash = () => {
                     Entry fee: {award.price}
                   </div>
                 </div>
+                {award.available_categories && (
+                  <div className="pt-4 border-t border-gray-100 mb-4">
+                    <div className="text-xs font-medium text-gray-700 mb-2">Available Categories:</div>
+                    <div className="text-xs text-gray-600 line-clamp-2">
+                      {award.available_categories}
+                    </div>
+                  </div>
+                )}
                 <div className="pt-4 border-t border-gray-100">
                   <div className="text-xs text-gray-500 mb-2">
                     <strong>Category:</strong> {award.category}
@@ -438,18 +478,34 @@ const TrophyDash = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  <option value="">Select a category</option>
-                  {categories.slice(1).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select a category</option>
+                    {categories.slice(1).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry *</label>
+                  <select
+                    value={formData.industry}
+                    onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select an industry</option>
+                    {industries.slice(1).map(ind => (
+                      <option key={ind} value={ind}>{ind}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -497,6 +553,18 @@ const TrophyDash = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                   placeholder="Describe your awards programme, what makes it unique, and who should enter..."
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Available Categories</label>
+                <textarea
+                  value={formData.available_categories}
+                  onChange={(e) => setFormData({...formData, available_categories: e.target.value})}
+                  rows={2}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  placeholder="e.g. Best Digital Campaign, Rising Star, Agency of the Year"
+                />
+                <p className="text-xs text-gray-500 mt-1">Separate multiple categories with commas</p>
               </div>
 
               <div>
