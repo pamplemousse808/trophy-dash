@@ -13,9 +13,8 @@ const TrophyDash = () => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('home');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
   const [filterIndustry, setFilterIndustry] = useState('All');
-  const [filterPrestige, setFilterPrestige] = useState('All');
+  const [filterDeadline, setFilterDeadline] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -35,7 +34,12 @@ const TrophyDash = () => {
   
   const industries = ['All', 'General/Cross-Industry', 'Fintech', 'Legal/Law', 'HR/Recruitment', 'Healthcare', 'Technology/SaaS', 'Real Estate', 'Retail', 'Automotive', 'Energy', 'Financial Services', 'Education', 'Non-Profit', 'Government'];
   
-  const prestigeLevels = ['All', 'High', 'Medium', 'Low'];
+  const deadlineOptions = [
+    { value: 'All', label: 'All Deadlines' },
+    { value: '7', label: 'Next 7 Days' },
+    { value: '30', label: 'Next 30 Days' },
+    { value: '90', label: 'Next 3 Months' }
+  ];
 
   // Fetch awards from Supabase
   useEffect(() => {
@@ -77,12 +81,19 @@ const TrophyDash = () => {
     return awards.filter(award => {
       const matchesSearch = award.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           award.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filterCategory === 'All' || award.category === filterCategory;
       const matchesIndustry = filterIndustry === 'All' || award.industry === filterIndustry;
-      const matchesPrestige = filterPrestige === 'All' || award.prestige === filterPrestige;
-      return matchesSearch && matchesCategory && matchesIndustry && matchesPrestige;
+      
+      // Deadline filtering
+      let matchesDeadline = true;
+      if (filterDeadline !== 'All') {
+        const days = getDaysUntil(award.deadline);
+        const deadlineDays = parseInt(filterDeadline);
+        matchesDeadline = days > 0 && days <= deadlineDays;
+      }
+      
+      return matchesSearch && matchesIndustry && matchesDeadline;
     });
-  }, [awards, searchTerm, filterCategory, filterIndustry, filterPrestige]);
+  }, [awards, searchTerm, filterIndustry, filterDeadline]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.category || !formData.industry || !formData.deadline || !formData.price || 
@@ -319,19 +330,7 @@ const TrophyDash = () => {
             </div>
 
             {showFilters && (
-              <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
+              <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
                   <select
@@ -345,23 +344,22 @@ const TrophyDash = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Prestige</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
                   <select
-                    value={filterPrestige}
-                    onChange={(e) => setFilterPrestige(e.target.value)}
+                    value={filterDeadline}
+                    onChange={(e) => setFilterDeadline(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
                   >
-                    {prestigeLevels.map(level => (
-                      <option key={level} value={level}>{level}</option>
+                    {deadlineOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
                 </div>
-                <div className="col-span-3 flex justify-end">
+                <div className="col-span-2 flex justify-end">
                   <button
                     onClick={() => {
-                      setFilterCategory('All');
                       setFilterIndustry('All');
-                      setFilterPrestige('All');
+                      setFilterDeadline('All');
                       setSearchTerm('');
                     }}
                     className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
