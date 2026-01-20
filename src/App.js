@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Search, Calendar, DollarSign, Award, Plus, Filter, TrendingUp, X, Tag } from 'lucide-react';
+import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag } from 'lucide-react';
 
 // Initialize Supabase
 const supabase = createClient(
@@ -13,9 +13,8 @@ const TrophyDash = () => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('home');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('All');
   const [filterIndustry, setFilterIndustry] = useState('All');
-  const [filterPrestige, setFilterPrestige] = useState('All');
+  const [filterDeadline, setFilterDeadline] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -35,7 +34,12 @@ const TrophyDash = () => {
   
   const industries = ['All', 'General/Cross-Industry', 'Fintech', 'Legal/Law', 'HR/Recruitment', 'Healthcare', 'Technology/SaaS', 'Real Estate', 'Retail', 'Automotive', 'Energy', 'Financial Services', 'Education', 'Non-Profit', 'Government'];
   
-  const prestigeLevels = ['All', 'High', 'Medium', 'Low'];
+  const deadlineOptions = [
+    { value: 'All', label: 'All Deadlines' },
+    { value: '7', label: 'Next 7 Days' },
+    { value: '30', label: 'Next 30 Days' },
+    { value: '90', label: 'Next 3 Months' }
+  ];
 
   // Fetch awards from Supabase
   useEffect(() => {
@@ -66,23 +70,23 @@ const TrophyDash = () => {
     return diffDays;
   };
 
-  const imminentAwards = useMemo(() => {
-    return awards
-      .filter(award => getDaysUntil(award.deadline) <= 30 && getDaysUntil(award.deadline) > 0)
-      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-      .slice(0, 3);
-  }, [awards]);
-
   const filteredAwards = useMemo(() => {
     return awards.filter(award => {
       const matchesSearch = award.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           award.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = filterCategory === 'All' || award.category === filterCategory;
       const matchesIndustry = filterIndustry === 'All' || award.industry === filterIndustry;
-      const matchesPrestige = filterPrestige === 'All' || award.prestige === filterPrestige;
-      return matchesSearch && matchesCategory && matchesIndustry && matchesPrestige;
+      
+      // Deadline filtering
+      let matchesDeadline = true;
+      if (filterDeadline !== 'All') {
+        const days = getDaysUntil(award.deadline);
+        const deadlineDays = parseInt(filterDeadline);
+        matchesDeadline = days > 0 && days <= deadlineDays;
+      }
+      
+      return matchesSearch && matchesIndustry && matchesDeadline;
     });
-  }, [awards, searchTerm, filterCategory, filterIndustry, filterPrestige]);
+  }, [awards, searchTerm, filterIndustry, filterDeadline]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.category || !formData.industry || !formData.deadline || !formData.price || 
@@ -117,7 +121,7 @@ const TrophyDash = () => {
       });
       
       alert('Award submitted successfully!');
-      setView('database');
+      setView('home');
     } catch (error) {
       console.error('Error submitting award:', error);
       alert('Error submitting award. Please try again.');
@@ -164,298 +168,17 @@ const TrophyDash = () => {
     );
   }
 
-  if (view === 'home') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Award className="text-blue-600" size={32} />
-              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
-            </div>
-            <nav className="flex gap-4">
-              <button onClick={() => setView('home')} className="text-blue-600 font-medium">Home</button>
-              <button onClick={() => setView('database')} className="text-gray-600 hover:text-gray-900">Browse Awards</button>
-              <button onClick={() => setView('submit')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <Plus size={18} />
-                Submit Award
-              </button>
-            </nav>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-6 py-16 text-center">
-          <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Every Award. One Place. <span className="text-blue-600">No More FOMO.</span>
-          </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            The searchable database for comms professionals. Find awards, track deadlines, and never miss your shot at glory.
-          </p>
-          
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search awards by name or keyword..."
-                className="w-full pl-12 pr-4 py-4 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:outline-none text-lg"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setView('database');
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-16">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-3xl font-bold text-blue-600 mb-2">{awards.length}</div>
-              <div className="text-gray-600">Active Awards</div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-3xl font-bold text-purple-600 mb-2">{imminentAwards.length}</div>
-              <div className="text-gray-600">Closing Soon</div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="text-3xl font-bold text-amber-600 mb-2">{industries.length - 1}</div>
-              <div className="text-gray-600">Industries</div>
-            </div>
-          </div>
-        </div>
-
-        {imminentAwards.length > 0 && (
-          <div className="max-w-7xl mx-auto px-6 pb-16">
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="text-red-500" size={28} />
-              <h3 className="text-3xl font-bold text-gray-900">Closing Soon ⚡</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {imminentAwards.map(award => (
-                <div key={award.id} className="bg-white rounded-xl p-6 shadow-md border-2 border-red-200 hover:shadow-lg transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <DeadlineBadge deadline={award.deadline} />
-                    <PrestigeBadge level={award.prestige} />
-                  </div>
-                  <h4 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h4>
-                  <p className="text-sm text-gray-600 mb-3">{award.description.slice(0, 100)}...</p>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      {new Date(award.deadline).toLocaleDateString('en-GB')}
-                    </span>
-                    <span className="flex items-center gap-1 font-medium">
-                      <DollarSign size={14} />
-                      {award.price}
-                    </span>
-                  </div>
-                  {award.industry && (
-                    <div className="text-xs text-blue-600 font-medium mt-2">
-                      {award.industry}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
-          <div className="max-w-4xl mx-auto px-6 text-center">
-            <h3 className="text-3xl font-bold mb-4">Run an Awards Programme?</h3>
-            <p className="text-xl mb-8 text-blue-100">Get your awards in front of thousands of comms professionals. It's free to list.</p>
-            <button 
-              onClick={() => setView('submit')}
-              className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
-            >
-              Submit Your Award →
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === 'database') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Award className="text-blue-600" size={32} />
-              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
-            </div>
-            <nav className="flex gap-4">
-              <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
-              <button onClick={() => setView('database')} className="text-blue-600 font-medium">Browse Awards</button>
-              <button onClick={() => setView('submit')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <Plus size={18} />
-                Submit Award
-              </button>
-            </nav>
-          </div>
-        </header>
-
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="mb-8">
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search awards..."
-                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-              >
-                <Filter size={18} />
-                Filters
-              </button>
-            </div>
-
-            {showFilters && (
-              <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-                  <select
-                    value={filterIndustry}
-                    onChange={(e) => setFilterIndustry(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  >
-                    {industries.map(ind => (
-                      <option key={ind} value={ind}>{ind}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Prestige</label>
-                  <select
-                    value={filterPrestige}
-                    onChange={(e) => setFilterPrestige(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                  >
-                    {prestigeLevels.map(level => (
-                      <option key={level} value={level}>{level}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-3 flex justify-end">
-                  <button
-                    onClick={() => {
-                      setFilterCategory('All');
-                      setFilterIndustry('All');
-                      setFilterPrestige('All');
-                      setSearchTerm('');
-                    }}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
-                  >
-                    <X size={16} />
-                    Clear All
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mb-4 text-gray-600">
-            Showing {filteredAwards.length} award{filteredAwards.length !== 1 ? 's' : ''}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAwards.map(award => (
-              <div key={award.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-3">
-                  <DeadlineBadge deadline={award.deadline} />
-                  <PrestigeBadge level={award.prestige} />
-                </div>
-                <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
-                {award.industry && (
-                  <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
-                    <Tag size={12} />
-                    {award.industry}
-                  </div>
-                )}
-                <p className="text-sm text-gray-600 mb-4">{award.description}</p>
-                <div className="space-y-2 text-sm text-gray-500 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    Deadline: {new Date(award.deadline).toLocaleDateString('en-GB')}
-                  </div>
-                  <div className="flex items-center gap-2 font-medium">
-                    <DollarSign size={16} />
-                    Entry fee: {award.price}
-                  </div>
-                </div>
-                {award.available_categories && (
-                  <div className="pt-4 border-t border-gray-100 mb-4">
-                    <div className="text-xs font-medium text-gray-700 mb-2">Available Categories:</div>
-                    <div className="text-xs text-gray-600 line-clamp-2">
-                      {award.available_categories}
-                    </div>
-                  </div>
-                )}
-                <div className="pt-4 border-t border-gray-100">
-                  <div className="text-xs text-gray-500 mb-2">
-                    <strong>Category:</strong> {award.category}
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">
-                    <strong>Location:</strong> {award.location}
-                  </div>
-                  {award.website && (
-                    <a
-                      href={`https://${award.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      Visit website →
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {filteredAwards.length === 0 && (
-            <div className="text-center py-16">
-              <Award className="mx-auto text-gray-300 mb-4" size={64} />
-              <p className="text-gray-500 text-lg">No awards found matching your criteria.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   if (view === 'submit') {
     return (
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
               <Award className="text-blue-600" size={32} />
               <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
             </div>
             <nav className="flex gap-4">
               <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
-              <button onClick={() => setView('database')} className="text-gray-600 hover:text-gray-900">Browse Awards</button>
               <button onClick={() => setView('submit')} className="text-blue-600 font-medium">Submit Award</button>
             </nav>
           </div>
@@ -601,6 +324,189 @@ const TrophyDash = () => {
       </div>
     );
   }
+
+  // Main home view - single page with everything
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Award className="text-blue-600" size={32} />
+            <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+          </div>
+          <button 
+            onClick={() => setView('submit')} 
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Submit Award
+          </button>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <h2 className="text-5xl font-bold text-gray-900 mb-4">
+            Every Award. One Place. <span className="text-blue-600">No More FOMO.</span>
+          </h2>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            The searchable database for comms professionals. Find awards, track deadlines, and never miss your shot at glory.
+          </p>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="mb-8">
+          <div className="flex gap-4 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search awards by name or keyword..."
+                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+            >
+              <Filter size={18} />
+              Filters
+            </button>
+          </div>
+
+          {showFilters && (
+            <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                <select
+                  value={filterIndustry}
+                  onChange={(e) => setFilterIndustry(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  {industries.map(ind => (
+                    <option key={ind} value={ind}>{ind}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                <select
+                  value={filterDeadline}
+                  onChange={(e) => setFilterDeadline(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                >
+                  {deadlineOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-span-2 flex justify-end">
+                <button
+                  onClick={() => {
+                    setFilterIndustry('All');
+                    setFilterDeadline('All');
+                    setSearchTerm('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                >
+                  <X size={16} />
+                  Clear All
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Results Count */}
+        <div className="mb-4 text-gray-600">
+          Showing {filteredAwards.length} award{filteredAwards.length !== 1 ? 's' : ''}
+        </div>
+
+        {/* Awards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredAwards.map(award => (
+            <div key={award.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-3">
+                <DeadlineBadge deadline={award.deadline} />
+                <PrestigeBadge level={award.prestige} />
+              </div>
+              <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
+              {award.industry && (
+                <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
+                  <Tag size={12} />
+                  {award.industry}
+                </div>
+              )}
+              <p className="text-sm text-gray-600 mb-4">{award.description}</p>
+              <div className="space-y-2 text-sm text-gray-500 mb-4">
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  Deadline: {new Date(award.deadline).toLocaleDateString('en-GB')}
+                </div>
+                <div className="flex items-center gap-2 font-medium">
+                  <DollarSign size={16} />
+                  Entry fee: {award.price}
+                </div>
+              </div>
+              {award.available_categories && (
+                <div className="pt-4 border-t border-gray-100 mb-4">
+                  <div className="text-xs font-medium text-gray-700 mb-2">Available Categories:</div>
+                  <div className="text-xs text-gray-600 line-clamp-2">
+                    {award.available_categories}
+                  </div>
+                </div>
+              )}
+              <div className="pt-4 border-t border-gray-100">
+                <div className="text-xs text-gray-500 mb-2">
+                  <strong>Category:</strong> {award.category}
+                </div>
+                <div className="text-xs text-gray-500 mb-2">
+                  <strong>Location:</strong> {award.location}
+                </div>
+                {award.website && (
+                  <a
+                    href={`https://${award.website}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Visit website →
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* No Results */}
+        {filteredAwards.length === 0 && (
+          <div className="text-center py-16">
+            <Award className="mx-auto text-gray-300 mb-4" size={64} />
+            <p className="text-gray-500 text-lg">No awards found matching your criteria.</p>
+          </div>
+        )}
+      </div>
+
+      {/* CTA Footer */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16 mt-16">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h3 className="text-3xl font-bold mb-4">Run an Awards Programme?</h3>
+          <p className="text-xl mb-8 text-blue-100">Get your awards in front of thousands of comms professionals. It's free to list.</p>
+          <button 
+            onClick={() => setView('submit')}
+            className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
+          >
+            Submit Your Award →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default TrophyDash;
