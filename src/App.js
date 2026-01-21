@@ -88,44 +88,55 @@ const TrophyDash = () => {
     });
   }, [awards, searchTerm, filterIndustry, filterDeadline]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!formData.name || !formData.category || !formData.industry || !formData.deadline || !formData.price || 
         !formData.description || !formData.website || !formData.location) {
       alert('Please fill in all required fields');
       return;
     }
     
-    try {
-      const { data, error } = await supabase
-        .from('awards')
-        .insert([formData])
-        .select();
-      
-      if (error) throw error;
-      
-      // Add to local state
-      setAwards([...awards, ...data]);
-      
-      // Reset form
-      setFormData({
-        name: '',
-        category: '',
-        industry: '',
-        deadline: '',
-        prestige: 'Medium',
-        price: '',
-        description: '',
-        website: '',
-        location: '',
-        available_categories: ''
-      });
-      
-      alert('Award submitted successfully!');
-      setView('home');
-    } catch (error) {
-      console.error('Error submitting award:', error);
-      alert('Error submitting award. Please try again.');
-    }
+    // Create email body with all form data
+    const subject = `Trophy Dash Award Submission: ${formData.name}`;
+    const body = `
+New Award Submission from Trophy Dash:
+
+Award Name: ${formData.name}
+Category: ${formData.category}
+Industry: ${formData.industry}
+Deadline: ${formData.deadline}
+Entry Fee: ${formData.price}
+Prestige Level: ${formData.prestige}
+Location: ${formData.location}
+Website: ${formData.website}
+
+Description:
+${formData.description}
+
+Available Categories:
+${formData.available_categories || 'Not specified'}
+    `.trim();
+    
+    // Create mailto link
+    const mailtoLink = `mailto:jamiewhyte@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    
+    // Open email client
+    window.location.href = mailtoLink;
+    
+    // Reset form
+    setFormData({
+      name: '',
+      category: '',
+      industry: '',
+      deadline: '',
+      prestige: 'Medium',
+      price: '',
+      description: '',
+      website: '',
+      location: '',
+      available_categories: ''
+    });
+    
+    alert('Opening your email client with the submission details!');
   };
 
   const PrestigeBadge = ({ level }) => {
@@ -348,10 +359,10 @@ const TrophyDash = () => {
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            All the awards you'll ever need.
+            Every Award. One Place. <span className="text-blue-600">No More FOMO.</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            The searchable resource for comms and marketing professionals. Find awards, track deadlines, and never have to miss an entry again.
+            The searchable database for comms professionals. Find awards, track deadlines, and never miss your shot at glory.
           </p>
         </div>
       </div>
