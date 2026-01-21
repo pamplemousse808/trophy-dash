@@ -348,10 +348,10 @@ const TrophyDash = () => {
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Every Award. One Place. <span className="text-blue-600">No More FOMO.</span>
+            All the awards you'll ever need.
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            The searchable database for comms professionals. Find awards, track deadlines, and never miss your shot at glory.
+            The searchable resource for comms and marketing professionals. Find awards, track deadlines, and never have to miss an entry again.
           </p>
         </div>
       </div>
