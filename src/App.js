@@ -359,7 +359,7 @@ ${formData.available_categories || 'Not specified'}
       <div className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Every industry award in one place. <span className="text-blue-600">Let's go get famous!</span>
+            Every industry award in one place. <br><span className="text-blue-600">Let's go get famous!</span></br> 
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             The searchable resource for comms and marketing professionals. Find awards, track deadlines, and never miss an entry again.
