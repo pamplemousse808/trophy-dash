@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag } from 'lucide-react';
-
+import logo from './assets/Trophy Dash Header.jpg';
+import icon from './assets/Trophy Dash Icon.png'; 
 // Initialize Supabase
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
