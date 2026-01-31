@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag } from 'lucide-react';
+import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag, Bell, Mail } from 'lucide-react';
 import logo from './assets/Trophy Dash Header.jpg';
-import icon from './assets/Trophy Dash Icon.png'; 
+import icon from './assets/Trophy Dash Icon.png';
+import EmailSignupsAdmin from './components/EmailSignupsAdmin';
 // Initialize Supabase
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
@@ -17,6 +18,9 @@ const TrophyDash = () => {
   const [filterIndustry, setFilterIndustry] = useState('All');
   const [filterDeadline, setFilterDeadline] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -138,6 +142,54 @@ ${formData.available_categories || 'Not specified'}
     });
     
     alert('Opening your email client with the submission details!');
+  };
+
+  const handleEmailSignup = async (e) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    try {
+      // Save email to Supabase
+      const { data, error } = await supabase
+        .from('email_signups')
+        .insert([
+          { 
+            email: email.toLowerCase().trim(),
+            referral_source: 'modal' // You can track where signups come from
+          }
+        ])
+        .select();
+      
+      if (error) {
+        // Check if it's a duplicate email error
+        if (error.code === '23505') {
+          alert('This email is already subscribed! 🎉');
+        } else {
+          console.error('Signup error:', error);
+          alert('Something went wrong. Please try again.');
+        }
+        return;
+      }
+      
+      // Success!
+      console.log('New signup:', data);
+      setEmailSubmitted(true);
+      
+      // Reset after 3 seconds
+      setTimeout(() => {
+        setShowEmailModal(false);
+        setEmail('');
+        setEmailSubmitted(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Something went wrong. Please try again.');
+    }
   };
 
   const PrestigeBadge = ({ level }) => {
@@ -337,22 +389,113 @@ ${formData.available_categories || 'Not specified'}
     );
   }
 
+  if (view === 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+              <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
+              <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
+            </div>
+            <nav className="flex gap-4">
+              <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
+              <button onClick={() => setView('submit')} className="text-gray-600 hover:text-gray-900">Submit Award</button>
+              <button onClick={() => setView('admin')} className="text-blue-600 font-medium">Admin</button>
+            </nav>
+          </div>
+        </header>
+        <EmailSignupsAdmin />
+      </div>
+    );
+  }
+
   // Main home view - single page with everything
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Email Signup Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8 relative">
+            <button
+              onClick={() => setShowEmailModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={24} />
+            </button>
+            
+            {!emailSubmitted ? (
+              <>
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Bell className="text-blue-600" size={32} />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Never Miss a Deadline</h3>
+                  <p className="text-gray-600">Get weekly updates on upcoming award deadlines straight to your inbox.</p>
+                </div>
+                
+                <form onSubmit={handleEmailSignup} className="space-y-4">
+                  <div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Subscribe to Weekly Digest
+                  </button>
+                  <p className="text-xs text-gray-500 text-center">Free forever. Unsubscribe anytime.</p>
+                </form>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">You're subscribed! 🎉</h3>
+                <p className="text-gray-600">Check your inbox for confirmation.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
             <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
           </div>
-          <button 
-            onClick={() => setView('submit')} 
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Submit Award
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setView('submit')} 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <Plus size={18} />
+              Submit Award
+            </button>
+            {/* Subtle admin access - triple click the icon to access */}
+            <div 
+              onClick={(e) => {
+                if (e.detail === 3) { // Triple click
+                  setView('admin');
+                }
+              }}
+              className="cursor-default"
+              title="Admin access"
+            >
+              <Award className="text-gray-300 hover:text-gray-400" size={20} />
+            </div>
+          </div>
         </div>
       </header>
 
@@ -367,6 +510,28 @@ ${formData.available_categories || 'Not specified'}
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             The searchable resource for comms and marketing professionals. Find awards, track deadlines, and never miss an entry again.
           </p>
+        </div>
+      </div>
+
+      {/* Email Signup Banner */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <Mail className="text-blue-200" size={24} />
+              <div>
+                <h3 className="text-white font-semibold">Get Weekly Deadline Alerts</h3>
+                <p className="text-blue-100 text-sm">Never miss an entry deadline again</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+            >
+              <Bell size={18} />
+              Subscribe Free
+            </button>
+          </div>
         </div>
       </div>
 
@@ -477,9 +642,6 @@ ${formData.available_categories || 'Not specified'}
               )}
               <div className="pt-4 border-t border-gray-100">
                 <div className="text-xs text-gray-500 mb-2">
-                  <strong>Category:</strong> {award.category}
-                </div>
-                <div className="text-xs text-gray-500 mb-2">
                   <strong>Location:</strong> {award.location}
                 </div>
                 {award.website && (
@@ -511,12 +673,20 @@ ${formData.available_categories || 'Not specified'}
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h3 className="text-3xl font-bold mb-4">Run an Awards Programme?</h3>
           <p className="text-xl mb-8 text-blue-100">Get your awards in front of thousands of comms professionals. It's free to list.</p>
-          <button 
-            onClick={() => setView('submit')}
-            className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
-          >
-            Submit Your Award →
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              onClick={() => setView('submit')}
+              className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
+            >
+              Submit Your Award →
+            </button>
+            <button 
+              onClick={() => setShowEmailModal(true)}
+              className="bg-blue-700 text-white border-2 border-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-800 transition-colors"
+            >
+              Get Weekly Updates
+            </button>
+          </div>
         </div>
       </div>
     </div>
