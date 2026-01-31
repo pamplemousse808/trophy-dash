@@ -185,9 +185,9 @@ ${formData.available_categories || 'Not specified'}
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView('home')}>
-              <Award className="text-blue-600" size={32} />
-              <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
+              <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
+              <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
             </div>
             <nav className="flex gap-4">
               <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
@@ -342,9 +342,9 @@ ${formData.available_categories || 'Not specified'}
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Award className="text-blue-600" size={32} />
-            <h1 className="text-2xl font-bold text-gray-900">Trophy Dash</h1>
+          <div className="flex items-center gap-3">
+            <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
+            <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
           </div>
           <button 
             onClick={() => setView('submit')} 
