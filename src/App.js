@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag, Bell, Mail } from 'lucide-react';
-import logo from './assets/TrophyDash Header.jpg';
+import logo from './assets/Trophy Dash Header.png';
 import icon from './assets/Trophy Dash Icon.png';
 import EmailSignupsAdmin from './components/EmailSignupsAdmin';
 // Initialize Supabase
