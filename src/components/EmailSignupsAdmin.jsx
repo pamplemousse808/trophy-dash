@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';;
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Mail, Download, Users, TrendingUp } from 'lucide-react';
 
@@ -18,11 +18,7 @@ const EmailSignupsAdmin = () => {
     thisMonth: 0
   });
 
- useEffect(() => {
-  fetchSignups();
-}, [fetchSignups]);
-
-  const fetchSignups = useCallback(async () => {
+ const fetchSignups = useCallback(async () => {
   try {
     const { data, error } = await supabase
       .from('email_signups')
@@ -38,7 +34,11 @@ const EmailSignupsAdmin = () => {
   } finally {
     setLoading(false);
   }
-}, []);
+  }, []);
+
+ useEffect(() => {
+  fetchSignups();
+  }, [fetchSignups]);
 
   const calculateStats = (data) => {
     const now = new Date();
