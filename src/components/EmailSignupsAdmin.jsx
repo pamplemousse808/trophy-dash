@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';;
 import { createClient } from '@supabase/supabase-js';
 import { Mail, Download, Users, TrendingUp } from 'lucide-react';
 
@@ -18,27 +18,27 @@ const EmailSignupsAdmin = () => {
     thisMonth: 0
   });
 
-  useEffect(() => {
-    fetchSignups();
-  }, []);
+ useEffect(() => {
+  fetchSignups();
+}, [fetchSignups]);
 
-  const fetchSignups = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('email_signups')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      setSignups(data || []);
-      calculateStats(data || []);
-    } catch (error) {
-      console.error('Error fetching signups:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchSignups = useCallback(async () => {
+  try {
+    const { data, error } = await supabase
+      .from('email_signups')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    setSignups(data || []);
+    calculateStats(data || []);
+  } catch (error) {
+    console.error('Error fetching signups:', error);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const calculateStats = (data) => {
     const now = new Date();
