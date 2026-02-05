@@ -397,7 +397,9 @@ ${formData.available_categories || 'Not specified'}
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
               <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
-              <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
+             <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+               Trophy Dash
+              </h1>
             </div>
             <nav className="flex gap-4">
               <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
@@ -474,7 +476,9 @@ ${formData.available_categories || 'Not specified'}
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
-            <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
+            <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+             Trophy Dash
+            </h1>
           </div>
           <div className="flex items-center gap-4">
             <button 
