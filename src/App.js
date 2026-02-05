@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag, Bell, Mail } from 'lucide-react';
-import logo from './assets/Trophy Dash Logo.png';
 import icon from './assets/Trophy Dash Icon.png';
 import EmailSignupsAdmin from './components/EmailSignupsAdmin';
 // Initialize Supabase
@@ -238,9 +237,11 @@ ${formData.available_categories || 'Not specified'}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('home')}>
-              <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
-              <img src={logo} alt="Trophy Dash" className="h-8 object-contain" />
-            </div>
+               <img src={icon} alt="Trophy Dash Icon" className="h-10 w-10 object-contain" />
+               <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Trophy Dash
+               </h1>
+              </div>
             <nav className="flex gap-4">
               <button onClick={() => setView('home')} className="text-gray-600 hover:text-gray-900">Home</button>
               <button onClick={() => setView('submit')} className="text-blue-600 font-medium">Submit Award</button>
