@@ -3,11 +3,58 @@ import { createClient } from '@supabase/supabase-js';
 import { Search, Calendar, DollarSign, Award, Plus, Filter, X, Tag, Bell, Mail } from 'lucide-react';
 import icon from './assets/Trophy Dash Icon.png';
 import EmailSignupsAdmin from './components/EmailSignupsAdmin';
+
 // Initialize Supabase
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
+
+// AdSense Component for Banner Ads (Desktop Sidebar)
+const AdSenseBanner = ({ slot }) => {
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense error:', err);
+    }
+  }, []);
+
+  return (
+    <ins
+      className="adsbygoogle"
+      style={{ display: 'block' }}
+      data-ad-client="ca-pub-2810150859181063"
+      data-ad-slot={slot}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+  );
+};
+
+// AdSense Component for In-Feed Ads (Mobile)
+const AdSenseInFeed = ({ slot }) => {
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense error:', err);
+    }
+  }, []);
+
+  return (
+    <div className="md:hidden my-6">
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-format="fluid"
+        data-ad-layout-key="-fb+5w+4e-db+86"
+        data-ad-client="ca-pub-2810150859181063"
+        data-ad-slot={slot}
+      />
+    </div>
+  );
+};
 
 const TrophyDash = () => {
   const [awards, setAwards] = useState([]);
@@ -413,7 +460,7 @@ ${formData.available_categories || 'Not specified'}
     );
   }
 
-  // Main home view - single page with everything
+  // Main home view - with AdSense integration
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Email Signup Modal */}
@@ -540,137 +587,161 @@ ${formData.available_categories || 'Not specified'}
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="mb-8">
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search awards by name or keyword..."
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Main Content Area with Sidebar Ads */}
+      <div className="relative">
+        {/* Left Sidebar Ad - Desktop Only */}
+        <div className="hidden xl:block fixed left-4 top-1/3 w-48">
+          <div className="sticky top-32">
+            <AdSenseBanner slot="8585558568" />
+          </div>
+        </div>
+
+        {/* Right Sidebar Ad - Desktop Only */}
+        <div className="hidden xl:block fixed right-4 top-1/3 w-48">
+          <div className="sticky top-32">
+            <AdSenseBanner slot="3769190043" />
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-8">
+            <div className="flex gap-4 mb-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search awards by name or keyword..."
+                  className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:outline-none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Filter size={18} />
+                Filters
+              </button>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-            >
-              <Filter size={18} />
-              Filters
-            </button>
+
+            {showFilters && (
+              <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                  <select
+                    value={filterIndustry}
+                    onChange={(e) => setFilterIndustry(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    {industries.map(ind => (
+                      <option key={ind} value={ind}>{ind}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+                  <select
+                    value={filterDeadline}
+                    onChange={(e) => setFilterDeadline(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  >
+                    {deadlineOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-2 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setFilterIndustry('All');
+                      setFilterDeadline('All');
+                      setSearchTerm('');
+                    }}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                  >
+                    <X size={16} />
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {showFilters && (
-            <div className="bg-white p-4 rounded-lg border border-gray-200 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
-                <select
-                  value={filterIndustry}
-                  onChange={(e) => setFilterIndustry(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  {industries.map(ind => (
-                    <option key={ind} value={ind}>{ind}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
-                <select
-                  value={filterDeadline}
-                  onChange={(e) => setFilterDeadline(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                >
-                  {deadlineOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2 flex justify-end">
-                <button
-                  onClick={() => {
-                    setFilterIndustry('All');
-                    setFilterDeadline('All');
-                    setSearchTerm('');
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
-                >
-                  <X size={16} />
-                  Clear All
-                </button>
-              </div>
+          {/* Results Count */}
+          <div className="mb-4 text-gray-600">
+            Showing {filteredAwards.length} award{filteredAwards.length !== 1 ? 's' : ''}
+          </div>
+
+          {/* Awards Grid with In-Feed Ads for Mobile */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAwards.map((award, index) => (
+              <React.Fragment key={award.id}>
+                {/* Insert in-feed ad every 20 awards on mobile */}
+                {index > 0 && index % 20 === 0 && (
+                  <AdSenseInFeed slot="3333231884" />
+                )}
+                
+                <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <DeadlineBadge deadline={award.deadline} />
+                    <PrestigeBadge level={award.prestige} />
+                  </div>
+                  <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
+                  {award.industry && (
+                    <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
+                      <Tag size={12} />
+                      {award.industry}
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600 mb-4">{award.description}</p>
+                  <div className="space-y-2 text-sm text-gray-500 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar size={16} />
+                      Deadline: {new Date(award.deadline).toLocaleDateString('en-GB')}
+                    </div>
+                    <div className="flex items-center gap-2 font-medium">
+                      <DollarSign size={16} />
+                      Entry fee: {award.price}
+                    </div>
+                  </div>
+                  {award.available_categories && (
+                    <div className="pt-4 border-t border-gray-100 mb-4">
+                      <div className="text-xs font-medium text-gray-700 mb-2">Available Categories:</div>
+                      <div className="text-xs text-gray-600 line-clamp-2">
+                        {award.available_categories}
+                      </div>
+                    </div>
+                  )}
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="text-xs text-gray-500 mb-2">
+                      <strong>Location:</strong> {award.location}
+                    </div>
+                    {award.website && (
+                      <a
+                        href={`https://${award.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Visit website →
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* No Results */}
+          {filteredAwards.length === 0 && (
+            <div className="text-center py-16">
+              <Award className="mx-auto text-gray-300 mb-4" size={64} />
+              <p className="text-gray-500 text-lg">No awards found matching your criteria.</p>
             </div>
           )}
         </div>
-
-        {/* Results Count */}
-        <div className="mb-4 text-gray-600">
-          Showing {filteredAwards.length} award{filteredAwards.length !== 1 ? 's' : ''}
-        </div>
-
-        {/* Awards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAwards.map(award => (
-            <div key={award.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-                <DeadlineBadge deadline={award.deadline} />
-                <PrestigeBadge level={award.prestige} />
-              </div>
-              <h3 className="font-bold text-lg text-gray-900 mb-2">{award.name}</h3>
-              {award.industry && (
-                <div className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
-                  <Tag size={12} />
-                  {award.industry}
-                </div>
-              )}
-              <p className="text-sm text-gray-600 mb-4">{award.description}</p>
-              <div className="space-y-2 text-sm text-gray-500 mb-4">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  Deadline: {new Date(award.deadline).toLocaleDateString('en-GB')}
-                </div>
-                <div className="flex items-center gap-2 font-medium">
-                  <DollarSign size={16} />
-                  Entry fee: {award.price}
-                </div>
-              </div>
-              {award.available_categories && (
-                <div className="pt-4 border-t border-gray-100 mb-4">
-                  <div className="text-xs font-medium text-gray-700 mb-2">Available Categories:</div>
-                  <div className="text-xs text-gray-600 line-clamp-2">
-                    {award.available_categories}
-                  </div>
-                </div>
-              )}
-              <div className="pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 mb-2">
-                  <strong>Location:</strong> {award.location}
-                </div>
-                {award.website && (
-                  <a
-                    href={`https://${award.website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    Visit website →
-                  </a>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredAwards.length === 0 && (
-          <div className="text-center py-16">
-            <Award className="mx-auto text-gray-300 mb-4" size={64} />
-            <p className="text-gray-500 text-lg">No awards found matching your criteria.</p>
-          </div>
-        )}
       </div>
 
       {/* CTA Footer */}
